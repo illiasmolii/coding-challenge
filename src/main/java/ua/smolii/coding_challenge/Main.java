@@ -10,6 +10,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+
 public class Main {
 
 	private static final List<Movie> movies;
@@ -57,7 +61,7 @@ public class Main {
 		printPercentOfNominatedMovies();
 
 		//7. Most played actor in 1 year -> Should find actor, number of movies played, year
-
+		printMostPlayedActorInOneYear();
 	}
 
 	//1. Number of movies per actor
@@ -143,7 +147,28 @@ public class Main {
 
 	//7. Most played actor in 1 year -> Should find actor, number of movies played, year
 	private static void printMostPlayedActorInOneYear() {
+		System.out.println("\n7. Most played actor in 1 year -> Should find actor, number of movies played, year");
+		Map<ActorInYear, Integer> actorsInYear = new HashMap<>();
+		for (Movie movie: movies) {
+			for (Actor actor: movie.getActors()) {
+				ActorInYear actorInYear = new ActorInYear(actor, movie.getYear());
 
+				if (actorsInYear.containsKey(actorInYear)) {
+					actorsInYear.put(actorInYear, actorsInYear.get(actorInYear) + 1);
+				} else {
+					actorsInYear.put(actorInYear, 1);
+				}
+			}
+		}
+
+		Map.Entry<ActorInYear, Integer> mostPlayed = null;
+		for (Map.Entry<ActorInYear, Integer> entry: actorsInYear.entrySet()) {
+			if (mostPlayed == null || (mostPlayed.getValue() < entry.getValue())) {
+				mostPlayed = entry;
+			}
+		}
+
+		System.out.println(mostPlayed.getKey().getActor() + " " +  mostPlayed.getKey().getYear() + " " + mostPlayed.getValue());
 	}
 
 	private static void fillMoviesPerYear(Map<Actor, Integer> moviesPerActor) {
@@ -156,5 +181,14 @@ public class Main {
 				}
 			}
 		}
+	}
+
+	@Data
+	@AllArgsConstructor
+	@EqualsAndHashCode
+	private static class ActorInYear {
+
+		private Actor actor;
+		private Integer year;
 	}
 }
