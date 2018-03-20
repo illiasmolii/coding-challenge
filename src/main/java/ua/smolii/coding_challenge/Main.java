@@ -3,12 +3,11 @@ package ua.smolii.coding_challenge;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.Set;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -52,7 +51,7 @@ public class Main {
 		printNumberOfNominatedMoviesPerActor();
 
 		//4. Actors with >10 movies
-		printActorsWithMoreThanTwoMovies();
+		printActorsWithMoreThanTenMovies();
 
 		//5. Number of nominated movies per year
 		printNumberOfNominatedMoviesPerYear();
@@ -77,12 +76,15 @@ public class Main {
 	//2. Actors who played in nominated movie
 	private static void printActorsWhoPlayedInNominatedMovies() {
 		System.out.println("\n2. Actors who played in nominated movie");
-		new HashSet<>(movies.stream()
-				.filter(movie -> movie.getNominations() > 0)
-				.map(Movie::getActors)
-				.flatMap(Collection::stream)
-				.collect(Collectors.toSet()))
-				.forEach(System.out::println);
+		Set<Actor> actors = new HashSet<>();
+
+		for (Movie movie: movies) {
+			if (isNominated(movie)) {
+				actors.addAll(movie.getActors());
+			}
+		}
+
+		System.out.println(actors);
 	}
 
 	//3. Number of nominated movies per actor
@@ -91,7 +93,7 @@ public class Main {
 		Map<Actor, Integer> moviesPerActor = new HashMap<>();
 
 		for (Movie movie: movies) {
-			if (movie.getNominations() > 0) {
+			if (isNominated(movie)) {
 				for (Actor actor: movie.getActors()) {
 					if (moviesPerActor.containsKey(actor)) {
 						moviesPerActor.put(actor, moviesPerActor.get(actor) + 1);
@@ -105,18 +107,27 @@ public class Main {
 		System.out.println(moviesPerActor);
 	}
 
-	//4. Actors with >2 movies
-	private static void printActorsWithMoreThanTwoMovies() {
+	//4. Actors with >10 movies
+	private static void printActorsWithMoreThanTenMovies() {
 		System.out.println("\n4. Actors with >10 movies");
 		Map<Actor, Integer> moviesPerActor = new HashMap<>();
+		Set<Actor> moreThanTen = new HashSet<>();
 
-		fillMoviesPerYear(moviesPerActor);
+		for (Movie movie: movies) {
+			for (Actor actor: movie.getActors()) {
+				if (moviesPerActor.containsKey(actor)) {
+					moviesPerActor.put(actor, moviesPerActor.get(actor) + 1);
+				} else {
+					moviesPerActor.put(actor, 1);
+				}
 
-		for (Map.Entry<Actor, Integer> entry: moviesPerActor.entrySet()) {
-			if (entry.getValue() > 2) {
-				System.out.println(entry.getKey() + " " + entry.getValue());
+				if (moviesPerActor.containsKey(actor) && moviesPerActor.get(actor) >= 2) {
+					moreThanTen.add(actor);
+				}
 			}
 		}
+
+		System.out.println(moreThanTen);
 	}
 
 	//5. Number of nominated movies per year
@@ -125,7 +136,7 @@ public class Main {
 		Map<Integer, Integer> nominatedPerYear = new HashMap<>();
 
 		for (Movie movie: movies) {
-			if (movie.getNominations() > 0) {
+			if (isNominated(movie)) {
 				if (nominatedPerYear.containsKey(movie.getYear())) {
 					nominatedPerYear.put(movie.getYear(), nominatedPerYear.get(movie.getYear()) + 1);
 				} else {
@@ -139,16 +150,25 @@ public class Main {
 	//6. Percent of nominated movies
 	private static void printPercentOfNominatedMovies() {
 		System.out.println("\n6. Percent of nominated movies");
-		System.out.println(
-				movies.stream().filter(movie -> movie.getNominations() > 0)
-						.collect(Collectors.toList()).size() / (movies.size() + 0.0) * 100
-		);
+		int nominated = 0;
+
+		for (Movie movie: movies) {
+			if (isNominated(movie)) nominated++;
+		}
+
+		double percentOfNominated = nominated / (movies.size() + 0.0) * 100;
+
+		System.out.println(percentOfNominated);
 	}
 
 	//7. Most played actor in 1 year -> Should find actor, number of movies played, year
 	private static void printMostPlayedActorInOneYear() {
 		System.out.println("\n7. Most played actor in 1 year -> Should find actor, number of movies played, year");
 		Map<ActorInYear, Integer> actorsInYear = new HashMap<>();
+
+		ActorInYear mostPlayed = null;
+		int moviesPlayed = 0;
+
 		for (Movie movie: movies) {
 			for (Actor actor: movie.getActors()) {
 				ActorInYear actorInYear = new ActorInYear(actor, movie.getYear());
@@ -158,17 +178,17 @@ public class Main {
 				} else {
 					actorsInYear.put(actorInYear, 1);
 				}
+
+				if (mostPlayed == null || moviesPlayed < actorsInYear.get(actorInYear)) {
+					mostPlayed = actorInYear;
+					moviesPlayed = actorsInYear.get(actorInYear);
+				}
 			}
 		}
 
-		Map.Entry<ActorInYear, Integer> mostPlayed = null;
-		for (Map.Entry<ActorInYear, Integer> entry: actorsInYear.entrySet()) {
-			if (mostPlayed == null || (mostPlayed.getValue() < entry.getValue())) {
-				mostPlayed = entry;
-			}
+		if (mostPlayed != null) {
+			System.out.println(mostPlayed.getActor() + " " +  mostPlayed.getYear() + " " + moviesPlayed);
 		}
-
-		System.out.println(mostPlayed.getKey().getActor() + " " +  mostPlayed.getKey().getYear() + " " + mostPlayed.getValue());
 	}
 
 	private static void fillMoviesPerYear(Map<Actor, Integer> moviesPerActor) {
@@ -181,6 +201,10 @@ public class Main {
 				}
 			}
 		}
+	}
+
+	private static boolean isNominated(Movie movie) {
+		return movie.getNominations() > 0;
 	}
 
 	@Data
